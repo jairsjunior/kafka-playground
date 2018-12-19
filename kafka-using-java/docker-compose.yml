@@ -1,0 +1,17 @@
+version: '3.5'
+
+services:
+
+  kafka-producer:
+    image: jairsjunior/kafka-producer
+    build: .
+    environment:
+      BOOTSTRAP_SERVERS_CONFIG: "${HOST_IP}:9092"
+      OAUTH_WITH_SSL: "false"
+      OAUTH_ACCEPT_UNSECURE_SERVER: "true"
+      OAUTH_LOGIN_SERVER : "${HOST_IP}:4444"
+      OAUTH_LOGIN_ENDPOINT : "/oauth2/token"
+      OAUTH_LOGIN_GRANT_TYPE: "client_credentials"
+      OAUTH_LOGIN_SCOPE: "producer.kafka"
+      OAUTH_AUTHORIZATION : "Basic cHJvZHVjZXIta2Fma2E6cHJvZHVjZXIta2Fma2E="
+

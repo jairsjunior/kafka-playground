@@ -1,0 +1,35 @@
+version: '3.5'
+services: 
+  producer:
+    image: jairsjunior/kafka-node-oauth-producer:latest
+    build: ./src/producer
+    environment:
+      # Kafka Variables
+      KAFKA_HOST: "${HOST_IP}:9092"
+      KAFKA_TOPIC: "topic1"
+      KAFKA_GROUP_ID: "group-id"
+      # OAuth Variables
+      OAUTH_PROTOCOL: "http"
+      OAUTH_GRANT_TYPE: "client_credentials"
+      OAUTH_SCOPE: "producer.kafka"
+      OAUTH_HOST: "${HOST_IP}:4444"
+      OAUTH_ENDPOINT: "/oauth2/token"
+      OAUTH_TOKEN: "Basic cHJvZHVjZXIta2Fma2E6cHJvZHVjZXIta2Fma2E="
+    
+  consumer:
+    image: jairsjunior/kafka-node-oauth-consumer:latest
+    build: ./src/consumer
+    restart: always
+    environment:
+      # Kafka Variables
+      KAFKA_HOST: "${HOST_IP}:9092"
+      KAFKA_TOPIC: "topic1"
+      KAFKA_GROUP_ID: "group-id"
+      # OAuth Variables
+      OAUTH_PROTOCOL: "http"
+      OAUTH_GRANT_TYPE: "client_credentials"
+      OAUTH_SCOPE: "consumer.kafka"
+      OAUTH_HOST: "${HOST_IP}:4444"
+      OAUTH_ENDPOINT: "/oauth2/token"
+      OAUTH_TOKEN: "Basic Y29uc3VtZXIta2Fma2E6Y29uc3VtZXIta2Fma2E="
+    

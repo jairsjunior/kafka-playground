@@ -1,0 +1,102 @@
+version: '3.5'
+
+services:
+
+  #################################### KAFKA BROKER ####################################
+  kafka:
+    image: gateway30/kafka-with-oauth
+    build: ./kafka-broker/kafka-with-oauth
+    ports:
+      - "9092:9092"
+    links:
+      - hydra:hydra
+      - zookeeper:zookeeper
+    depends_on:
+      - hydra
+    environment:
+      # KAFKA Configuration
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      EXTRA_ARGS: "-Djava.security.auth.login.config=/opt/kafka/config/kafka_server_jaas.conf"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT
+      KAFKA_LISTENERS: "SASL_PLAINTEXT://:9092"
+      KAFKA_ADVERTISED_LISTENERS: "SASL_PLAINTEXT://${HOST_IP}:9092"
+      # KAFKA Security
+      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: OAUTHBEARER
+      KAFKA_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      # OAuth Configuration
+      OAUTH_WITH_SSL: "false"
+      OAUTH_LOGIN_SERVER : "hydra:4444"
+      OAUTH_LOGIN_ENDPOINT : "/oauth2/token"
+      OAUTH_LOGIN_GRANT_TYPE: "client_credentials"
+      OAUTH_LOGIN_SCOPE: "broker.kafka"
+      OAUTH_AUTHORIZATION : "Basic YnJva2VyLWthZmthOmJyb2tlci1rYWZrYQ=="
+      OAUTH_INTROSPECT_SERVER : "hydra:4445"
+      OAUTH_INTROSPECT_ENDPOINT : "/oauth2/introspect"
+      OAUTH_INTROSPECT_AUTHORIZATION : "Basic YnJva2VyLWthZmthOmJyb2tlci1rYWZrYQ=="
+  
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2181:2181"
+
+  #################################### OAUTH SERVER ####################################
+  hydra-migrate:
+    image: oryd/hydra:v1.0.0-rc.2_oryOS.9
+    links:
+      - postgresd:postgresd
+    environment:
+      - DATABASE_URL=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable
+    command:
+      migrate sql -e 
+    restart: on-failure
+
+  hydra:
+    image: oryd/hydra:v1.0.0-rc.2_oryOS.9
+    links:
+      - postgresd:postgresd
+    depends_on:
+      - hydra-migrate
+    ports:
+      # Public port
+      - "4444:4444"
+      # Admin port
+      - "4445:4445"
+    command: "serve all --dangerous-force-http"   
+    environment:
+      - OAUTH2_ISSUER_URL=http://localhost:4444
+      - OAUTH2_CONSENT_URL=http://localhost:3000/consent
+      - OAUTH2_LOGIN_URL=http://localhost:3000/login
+      - DATABASE_URL=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable
+      - SYSTEM_SECRET=youReallyNeedToChangeThis
+      - FORCE_ROOT_CLIENT_CREDENTIALS=hydra:changeme
+      - OAUTH2_SHARE_ERROR_DEBUG=1
+      - OIDC_SUBJECT_TYPES_SUPPORTED=public,pairwise
+      - OIDC_SUBJECT_TYPE_PAIRWISE_SALT=youReallyNeedToChangeThis
+      - HYDRA_ADMIN_URL=http://localhost:4445
+    restart: unless-stopped
+
+  hydra-import:
+    image: jairsjunior/hydra-import
+    build: ./oauth-hydra/hydra-import
+    depends_on:
+      - hydra
+    links: 
+      - hydra:hydra
+    environment:
+      CLUSTER_URL: http://hydra:4444
+      CLIENT_ID: hydra
+      CLIENT_SECRET: changeme
+
+  postgresd:
+    image: postgres:9.6
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=hydra
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=hydra
+  
+
+      
+

@@ -1,0 +1,19 @@
+{
+  "name": "kafka-node-oauth-producer",
+  "description": "Kafka node producer using OAuth",
+  "version": "0.0.1",
+  "main": "producer.js",
+  "scripts": {
+    "start": "node producer.js"
+  },
+  "keywords": [
+    "kakfa",
+    "node",
+    "oauth"
+  ],
+  "author": "Jair de Souza Juniro",
+  "license": "MIT",
+  "dependencies": {
+    "kafka-node-oauth": "^3.0.3"
+  }
+}

@@ -14,7 +14,7 @@ The first class implements AuthenticateCallbackHandler and will serve for client
 The second class implements the same class and will serve to broker can make the validation of the sended token using OAuth token instrospection.
 We will implement two another helper classes, one for handle our http requests (Get Token and Introspect Token) and a class to set our JWT properties.
 
-##Configuring Kafka Broker
+## Configuring Kafka Broker
 
 For this configuration, we need to do three steps:
 - Create an JAAS configuration file setting the login module that we will use

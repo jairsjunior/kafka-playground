@@ -1,6 +1,7 @@
 FROM node:11-alpine
 
-RUN mkdir -p /src/app
+RUN apk add --update --no-cache busybox busybox-extras && \
+    mkdir -p /src/app
 
 WORKDIR /src/app
 
@@ -10,4 +11,4 @@ RUN npm install
 
 ADD . /src/app
 
-CMD [ "npm", "start" ]
+CMD [ "sh", "./checkIsUp.sh" ]

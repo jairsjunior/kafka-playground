@@ -29,7 +29,7 @@ For this example, we use a docker-compose file that setup server and create 3 ac
 - producer-kafka: for producer container
 - broker-kafka: for interbroker authentication
 
-The above commands will run:
+The below commands will run:
 - Zookeeper
 - Kafka Broker
 - ORY Hydra (OAuth2 Server)
@@ -54,6 +54,6 @@ docker-compose up
 
 ## Examples Folder
 
-This folder contains one example of producer and consumer using the above languages and 
+This folder contains one example of producer and consumer using the below languages.
 - Java
 - Javascript

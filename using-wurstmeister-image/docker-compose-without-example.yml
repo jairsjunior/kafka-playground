@@ -5,7 +5,7 @@ services:
   #################################### KAFKA BROKER ####################################
   kafka:
     image: jairsjunior/kafka-with-oauth
-    build: ./kafka-broker/kafka-with-oauth
+    build: ./kafka-broker
     ports:
       - "9092:9092"
     links:
@@ -96,7 +96,3 @@ services:
       - POSTGRES_USER=hydra
       - POSTGRES_PASSWORD=secret
       - POSTGRES_DB=hydra
-  
-
-      
-

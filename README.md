@@ -1,4 +1,4 @@
-# How to setup OAuth2 mechanism to a Kafka Cluster
+# How to setup OAuth2 mechanism to Kafka
 
 With the commit of KIP-255 (Kafka Improvement Proposal) at version 2.0.0 of Kafka, now we can use SASL (Simple Authentication and Security Layer) OAUTHBEARER to authenticate clients to the broker or interbroker authentication.
 
@@ -29,10 +29,27 @@ For this example, we use a docker-compose file that setup server and create 3 ac
 - producer-kafka: for producer container
 - broker-kafka: for interbroker authentication
 
-For start our OAuth2 server and our Kafka broker we need to clone this repo to run the docker-compose file at root folder. Before running docker-compose we need to set an environment variable called HOST_IP wich contains IP address of running machine.
+The above commands will run:
+- Zookeeper
+- Kafka Broker
+- ORY Hydra (OAuth2 Server)
+- Producer
+- Consumer
+
+### Run Kafka using Confluent official docker images
+
+At the folder using-confluent-image run the command:
 
 ```
-HOST_IP=XXX.XXX.XXX.XXX docker-compose up
+docker-compose up
+```
+
+### Run Kafka using Wurstmeister images
+
+At the folder using-wurstmeister-image run the command:
+
+```
+docker-compose up
 ```
 
 ## Configure our clients (Producer/Consumer) to use this mechanism

@@ -1,0 +1,166 @@
+version: '3.7'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.3.1
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks: 
+      - kafka-local
+
+  broker:
+    image: confluentinc/cp-kafka:5.3.1
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+      - 9092:9092
+      - 9093:9093
+    environment:
+      #BASE CONFLUENT ENVIRONMENTS
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      #KAFKA SASL SET HANDLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,SASL_PLAINTEXT://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092,SASL_PLAINTEXT://broker:9093
+      KAFKA_LISTENER_NAME_SASL__PLAINTEXT_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: br.com.jairsjunior.security.oauthbearer.OauthAuthenticateValidatorCallbackHandler
+      KAFKA_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      #KAKFA JAAS CONFIGURATION FILE
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+      ZOOKEEPER_SASL_ENABLED: "FALSE"
+      #KAFKA INTERBROKER SECURITY
+      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: PLAINTEXT
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,org.apache.kafka=INFO"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+      # OAuth Configuration
+      OAUTH_WITH_SSL: "false"
+      OAUTH_LOGIN_SERVER : "hydra:4444"
+      OAUTH_LOGIN_ENDPOINT : "/oauth2/token"
+      OAUTH_LOGIN_GRANT_TYPE: "client_credentials"
+      OAUTH_LOGIN_SCOPE: "broker.kafka"
+      OAUTH_AUTHORIZATION : "Basic YnJva2VyLWthZmthOmJyb2tlci1rYWZrYQ=="
+      OAUTH_INTROSPECT_SERVER : "hydra:4445"
+      OAUTH_INTROSPECT_ENDPOINT : "/oauth2/introspect"
+      OAUTH_INTROSPECT_AUTHORIZATION : "Basic YnJva2VyLWthZmthOmJyb2tlci1rYWZrYQ=="
+    networks: 
+      - kafka-local
+    volumes: 
+      - ./kafka-broker/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+      - ./kafka-broker/scripts/dub.py:/usr/local/lib/python2.7/dist-packages/confluent/docker_utils/dub.py
+      - ./kafka-broker/libs/kafka-oauth-1.0.0.jar:/usr/share/java/kafka/kafka-oauth-1.0.0.jar
+
+#################################### OAUTH SERVER ####################################
+  hydra-migrate:
+    image: oryd/hydra:v1.0.0-rc.2_oryOS.9
+    links:
+      - postgresd:postgresd
+    environment:
+      - DATABASE_URL=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable
+    command:
+      migrate sql -e 
+    restart: on-failure
+    networks: 
+      - kafka-local
+
+  hydra:
+    image: oryd/hydra:v1.0.0-rc.2_oryOS.9
+    links:
+      - postgresd:postgresd
+    depends_on:
+      - hydra-migrate
+    ports:
+      # Public port
+      - "4444:4444"
+      # Admin port
+      - "4445:4445"
+    command: "serve all --dangerous-force-http"   
+    environment:
+      - OAUTH2_ISSUER_URL=http://localhost:4444
+      - OAUTH2_CONSENT_URL=http://localhost:3000/consent
+      - OAUTH2_LOGIN_URL=http://localhost:3000/login
+      - DATABASE_URL=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable
+      - SYSTEM_SECRET=youReallyNeedToChangeThis
+      - FORCE_ROOT_CLIENT_CREDENTIALS=hydra:changeme
+      - OAUTH2_SHARE_ERROR_DEBUG=1
+      - OIDC_SUBJECT_TYPES_SUPPORTED=public,pairwise
+      - OIDC_SUBJECT_TYPE_PAIRWISE_SALT=youReallyNeedToChangeThis
+      - HYDRA_ADMIN_URL=http://localhost:4445
+    restart: unless-stopped
+    networks: 
+      - kafka-local
+
+  hydra-import:
+    image: jairsjunior/hydra-import
+    depends_on:
+      - hydra
+    links: 
+      - hydra:hydra
+    environment:
+      CLUSTER_URL: http://hydra:4444
+      CLIENT_ID: hydra
+      CLIENT_SECRET: changeme
+    networks: 
+      - kafka-local
+
+  postgresd:
+    image: postgres:9.6-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=hydra
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=hydra
+    networks: 
+      - kafka-local
+
+  #################################### KAFKA PRODUCER AND CONSUMER ####################################
+
+  producer:
+    image: jairsjunior/kafka-node-oauth-producer:latest
+    restart: always
+    environment:
+      # Kafka Variables
+      KAFKA_HOST: "broker:9093"
+      KAFKA_TOPIC: "topic1"
+      KAFKA_GROUP_ID: "group-id"
+      # OAuth Variables
+      OAUTH_PROTOCOL: "http"
+      OAUTH_GRANT_TYPE: "client_credentials"
+      OAUTH_SCOPE: "producer.kafka"
+      OAUTH_HOST: "hydra:4444"
+      OAUTH_ENDPOINT: "/oauth2/token"
+      OAUTH_TOKEN: "Basic cHJvZHVjZXIta2Fma2E6cHJvZHVjZXIta2Fma2E="
+    networks: 
+      - kafka-local
+    
+  consumer:
+    image: jairsjunior/kafka-node-oauth-consumer:latest
+    restart: always
+    environment:
+      # Kafka Variables
+      KAFKA_HOST: "broker:9093"
+      KAFKA_TOPIC: "topic1"
+      KAFKA_GROUP_ID: "group-id"
+      # OAuth Variables
+      OAUTH_PROTOCOL: "http"
+      OAUTH_GRANT_TYPE: "client_credentials"
+      OAUTH_SCOPE: "consumer.kafka"
+      OAUTH_HOST: "hydra:4444"
+      OAUTH_ENDPOINT: "/oauth2/token"
+      OAUTH_TOKEN: "Basic Y29uc3VtZXIta2Fma2E6Y29uc3VtZXIta2Fma2E="
+    networks: 
+      - kafka-local
+
+networks: 
+  kafka-local:

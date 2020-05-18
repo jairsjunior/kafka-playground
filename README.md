@@ -38,7 +38,7 @@ The above commands will run:
 
 ### Run Kafka using Confluent official docker images
 
-At the folder using-confluent-image run the command:
+At the folder `using-confluent-image` run the command:
 
 ```
 docker-compose up
@@ -46,28 +46,14 @@ docker-compose up
 
 ### Run Kafka using Wurstmeister images
 
-At the folder using-wurstmeister-image run the command:
+At the folder `using-wurstmeister-image` run the command:
 
 ```
 docker-compose up
 ```
 
-## Configure our clients (Producer/Consumer) to use this mechanism
+## Examples Folder
 
-For now we can use our jar file to configure clients using Java or Scala. For javascript developer there is an option, kafka-node-oauth npm module that implements this mechanism.
-
-### Java/Scala
-
-At the cloned repo, we have a folder called kafka-using-java, that contains one producer example, using our .jar file. To run this example you will need to set HOST_IP environment variable wich contains IP address of running machine.
-
-```
-HOST_IP=XXX.XXX.XXX.XXX docker-compose up
-```
-
-### Javascript
-
-At the cloned repo, we have a folder called kafka-using-node, that contains one producer and one consumer example, using our modified kafka-node-oauth package. To run this example you will need to set HOST_IP environment variable wich contains IP address of running machine.
-
-```
-HOST_IP=XXX.XXX.XXX.XXX docker-compose up
-```
+This folder contains one example of producer and consumer using the above languages and 
+- Java
+- Javascript

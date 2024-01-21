@@ -13,10 +13,10 @@ services:
     networks: 
       - kafka-local
 
-  broker:
+  kafka:
     image: confluentinc/cp-kafka:5.3.1
-    hostname: broker
-    container_name: broker
+    hostname: kafka
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
@@ -32,7 +32,7 @@ services:
       #KAFKA SASL SET HANDLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,SASL_PLAINTEXT://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092,SASL_PLAINTEXT://broker:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092,SASL_PLAINTEXT://kafka:9093
       KAFKA_LISTENER_NAME_SASL__PLAINTEXT_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: br.com.jairsjunior.security.oauthbearer.OauthAuthenticateValidatorCallbackHandler
       KAFKA_SASL_ENABLED_MECHANISMS: OAUTHBEARER
       #KAKFA JAAS CONFIGURATION FILE
@@ -131,7 +131,7 @@ services:
     restart: always
     environment:
       # Kafka Variables
-      KAFKA_HOST: "broker:9093"
+      KAFKA_HOST: "kafka:9093"
       KAFKA_TOPIC: "topic1"
       KAFKA_GROUP_ID: "group-id"
       # OAuth Variables
@@ -149,7 +149,7 @@ services:
     restart: always
     environment:
       # Kafka Variables
-      KAFKA_HOST: "broker:9093"
+      KAFKA_HOST: "kafka:9093"
       KAFKA_TOPIC: "topic1"
       KAFKA_GROUP_ID: "group-id"
       # OAuth Variables
